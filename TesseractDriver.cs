@@ -1,125 +1,64 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Events;
 
-public class TesseractDriver
+namespace Tesseract
 {
-    private TesseractWrapper _tesseract;
-    private static readonly List<string> fileNames = new List<string> {"tessdata.tgz"};
-
-    public string CheckTessVersion()
+    public static class Driver
     {
-        _tesseract = new TesseractWrapper();
+        private const string tessdata = "tessdata";
+        private static Wrapper _tesseract = null;
 
-        try
+        public static bool Init(string lang, int confidence, bool highlight = false, Action onSetupComplete = null)
         {
-            string version = "Tesseract version: " + _tesseract.Version();
-            Debug.Log(version);
-            return version;
-        }
-        catch (Exception e)
-        {
-            string errorMessage = e.GetType() + " - " + e.Message;
-            Debug.LogError("Tesseract version: " + errorMessage);
-            return errorMessage;
-        }
-    }
+            string datapath = Path.Combine(Application.streamingAssetsPath, tessdata);
 
-    public void Setup(UnityAction onSetupComplete)
-    {
-#if UNITY_EDITOR
-        OcrSetup(onSetupComplete);
-#elif UNITY_ANDROID
-        CopyAllFilesToPersistentData(fileNames, onSetupComplete);
-#else
-        OcrSetup(onSetupComplete);
-#endif
-    }
-
-    public void OcrSetup(UnityAction onSetupComplete)
-    {
-        _tesseract = new TesseractWrapper();
-
-#if UNITY_EDITOR
-        string datapath = Path.Combine(Application.streamingAssetsPath, "tessdata");
-#elif UNITY_ANDROID
-        string datapath = Application.persistentDataPath + "/tessdata/";
-#else
-        string datapath = Path.Combine(Application.streamingAssetsPath, "tessdata");
-#endif
-
-        if (_tesseract.Init("eng", datapath))
-        {
-            Debug.Log("Init Successful");
-            onSetupComplete?.Invoke();
-        }
-        else
-        {
-            Debug.LogError(_tesseract.GetErrorMessage());
-        }
-    }
-
-    private async void CopyAllFilesToPersistentData(List<string> fileNames, UnityAction onSetupComplete)
-    {
-        String fromPath = "jar:file://" + Application.dataPath + "!/assets/";
-        String toPath = Application.persistentDataPath + "/";
-
-        foreach (String fileName in fileNames)
-        {
-            if (!File.Exists(toPath + fileName))
+            _tesseract = new Wrapper(confidence, highlight);
+            if (_tesseract.Init(lang, datapath))
             {
-                Debug.Log("Copying from " + fromPath + fileName + " to " + toPath);
-                WWW www = new WWW(fromPath + fileName);
-
-                while (!www.isDone)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(Time.deltaTime));
-                }
-
-                File.WriteAllBytes(toPath + fileName, www.bytes);
-                Debug.Log("File copy done");
-                www.Dispose();
-                www = null;
+#if UNITY_EDITOR
+                Debug.Log("Init Successful!");
+#endif
+                Application.quitting += () => _tesseract.Dispose();
+                onSetupComplete?.Invoke();
+                return true;
             }
             else
             {
-                Debug.Log("File exists! " + toPath + fileName);
+#if UNITY_EDITOR
+                Debug.LogWarning("Init Unsuccessful...");
+#endif
+                return false;
+            }
+        }
+
+        public static async Task<string> Recognize(Texture2D imageToRecognize)
+        {
+            if (_tesseract == null)
+            {
+                Debug.LogError("Tesseract not Initialized...");
+                return string.Empty;
             }
 
-            UnZipData(fileName);
+            return await _tesseract.Recognize(imageToRecognize);
         }
 
-        OcrSetup(onSetupComplete);
-    }
-
-    public string GetErrorMessage()
-    {
-        return _tesseract?.GetErrorMessage();
-    }
-
-    public string Recognize(Texture2D imageToRecognize)
-    {
-        return _tesseract.Recognize(imageToRecognize);
-    }
-
-    public Texture2D GetHighlightedTexture()
-    {
-        return _tesseract.GetHighlightedTexture();
-    }
-
-    private void UnZipData(string fileName)
-    {
-        if (File.Exists(Application.persistentDataPath + "/" + fileName))
+        public static Texture2D GetHighlightedTexture()
         {
-            UnZipUtil.ExtractTGZ(Application.persistentDataPath + "/" + fileName, Application.persistentDataPath);
-            Debug.Log("UnZipping Done");
+            if (_tesseract == null)
+            {
+                Debug.LogError("Tesseract not Initialized...");
+                return null;
+            }
+
+            return _tesseract.GetHighlightedTexture();
         }
-        else
+
+        public static string GetVersion()
         {
-            Debug.LogError(fileName + " not found!");
+            try { return $"Tesseract version: {Wrapper.Version()}"; }
+            catch (Exception e) { return $"{e.GetType()}: {e.Message}\n{e.StackTrace}"; }
         }
     }
 }

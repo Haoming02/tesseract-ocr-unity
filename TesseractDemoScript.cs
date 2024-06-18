@@ -3,65 +3,48 @@ using UnityEngine.UI;
 
 public class TesseractDemoScript : MonoBehaviour
 {
-    [SerializeField] private Texture2D imageToRecognize;
-    [SerializeField] private Text displayText;
-    [SerializeField] private RawImage outputImage;
-    private TesseractDriver _tesseractDriver;
-    private string _text = "";
-    private Texture2D _texture;
+    [SerializeField]
+    [Tooltip("Remember to Enable Read/Write")]
+    private Texture2D imageToRecognize;
 
-    private void Start()
+    [SerializeField]
+    private RawImage displayResult;
+
+    [SerializeField]
+    private Text displayText;
+
+    public enum Language { EN, JP, ZH };
+
+    [SerializeField]
+    private Language lang;
+
+    void Start()
     {
-        Texture2D texture = new Texture2D(imageToRecognize.width, imageToRecognize.height, TextureFormat.ARGB32, false);
-        texture.SetPixels32(imageToRecognize.GetPixels32());
-        texture.Apply();
+        Debug.Log(Tesseract.Driver.GetVersion());
 
-        _tesseractDriver = new TesseractDriver();
-        Recoginze(texture);
+        switch (lang)
+        {
+            case Language.EN:
+                Tesseract.Driver.Init("eng", 72, true);
+                break;
+            case Language.JP:
+                Tesseract.Driver.Init("jpn", -1, true);
+                break;
+            case Language.ZH:
+                Tesseract.Driver.Init("chi_tra", -1, true);
+                break;
+        }
     }
 
-    private void Recoginze(Texture2D outputTexture)
+    void Update()
     {
-        _texture = outputTexture;
-        ClearTextDisplay();
-        AddToTextDisplay(_tesseractDriver.CheckTessVersion());
-        _tesseractDriver.Setup(OnSetupCompleteRecognize);
+        if (Input.GetKeyDown(KeyCode.Space))
+            Recoginze();
     }
 
-    private void OnSetupCompleteRecognize()
+    private async void Recoginze()
     {
-        AddToTextDisplay(_tesseractDriver.Recognize(_texture));
-        AddToTextDisplay(_tesseractDriver.GetErrorMessage(), true);
-        SetImageDisplay();
-    }
-
-    private void ClearTextDisplay()
-    {
-        _text = "";
-    }
-
-    private void AddToTextDisplay(string text, bool isError = false)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return;
-
-        _text += (string.IsNullOrWhiteSpace(displayText.text) ? "" : "\n") + text;
-
-        if (isError)
-            Debug.LogError(text);
-        else
-            Debug.Log(text);
-    }
-
-    private void LateUpdate()
-    {
-        displayText.text = _text;
-    }
-
-    private void SetImageDisplay()
-    {
-        RectTransform rectTransform = outputImage.GetComponent<RectTransform>();
-        rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
-            rectTransform.rect.width * _tesseractDriver.GetHighlightedTexture().height / _tesseractDriver.GetHighlightedTexture().width);
-        outputImage.texture = _tesseractDriver.GetHighlightedTexture();
+        displayText.text = await Tesseract.Driver.Recognize(imageToRecognize);
+        displayResult.texture = Tesseract.Driver.GetHighlightedTexture();
     }
 }
