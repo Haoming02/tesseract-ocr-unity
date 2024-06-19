@@ -145,7 +145,7 @@ namespace Tesseract
 
             bool success = await Task.Run(() =>
             {
-                imagePtr = Marshal.AllocHGlobal(count * bytesPerPixel);
+                imagePtr = Marshal.AllocCoTaskMem(count * bytesPerPixel);
                 Marshal.Copy(dataBytes, 0, imagePtr, count * bytesPerPixel);
 
                 TessBaseAPISetImage(_tessHandle, imagePtr, width, height, bytesPerPixel, width * bytesPerPixel);
@@ -153,7 +153,7 @@ namespace Tesseract
                 return TessBaseAPIRecognize(_tessHandle, IntPtr.Zero) == 0;
             });
 
-            Marshal.FreeHGlobal(imagePtr);
+            Marshal.FreeCoTaskMem(imagePtr);
             if (!success)
                 return null;
 
@@ -194,7 +194,6 @@ namespace Tesseract
             }
 
             IntPtr stringPtr = TessBaseAPIGetUTF8Text(_tessHandle);
-            Marshal.FreeHGlobal(imagePtr);
             if (stringPtr.Equals(IntPtr.Zero))
                 return null;
 
