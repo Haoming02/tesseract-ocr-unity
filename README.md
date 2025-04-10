@@ -1,61 +1,61 @@
 # OCR for Unity via Tesseract
-The repo provides C# scripts that allow you to run [Tesseract](https://github.com/tesseract-ocr/tesseract) **O**ptical **C**haracter **R**ecognition inside UnityEngine on **Windows**
+A simple library that allow you to run [Tesseract](https://github.com/tesseract-ocr/tesseract) **O**ptical **C**haracter **R**ecognition in Unity applications on **Windows**
 
-> For other platforms, please check out the original repo instead
+> [!Tip]
+> For other platforms, check out the original repo instead
 
 ## Prerequisite
-- Unity Editor
-- Clone the `.cs` scripts
-- Obtain the Tesseract library and model:
+1. Obtain the Tesseract library and model:
 
-    #### Recommended Way
+    <details>
+    <summary><b>Recommended</b> Way</summary>
+
     1. Go to [Tesseract Installers for Windows](https://digi.bib.uni-mannheim.de/tesseract/)
     2. Download the setup `.exe`
-        > - This repo was built on `tesseract-ocr-w64-setup-v4.1.0.20190314.exe`
-        > - `v5.x` may cause incompatible API
+        - This repo was built on `tesseract-ocr-w64-setup-v4.1.0.20190314.exe`
+        - `v5.x` is incompatible
     3. Select the language(s) of choice and install
     4. Navigate to the installation folder
-        > **Default:** `C:\Users\<user name>\AppData\Local\Tesseract-OCR`
+        - **Default:** `C:\Users\<user name>\AppData\Local\Tesseract-OCR`
     5. Copy all the `.dll` to the `Plugins` folder in Unity
     6. Copy the `tessdata` folder to the `StreamingAssets` folder in Unity
 
-    #### Lazy Way
-    1. Download `Plugins` from [Releases](https://github.com/Haoming02/tesseract-ocr-unity/releases)
-    2. Download `tessdata` from [Releases](https://github.com/Haoming02/tesseract-ocr-unity/releases)
+    </details>
+
+    <details>
+    <summary><b>Lazy</b> Way</summary>
+
+    1. Download `Plugins.zip` from [Releases](https://github.com/Haoming02/tesseract-ocr-unity/releases) and extract into Unity
+    2. Download `tessdata.zip` from [Releases](https://github.com/Haoming02/tesseract-ocr-unity/releases) and extract into the `StreamingAssets` folder in Unity
+
+    </details>
+
+2. Download and install the `.unitypackage` from [Releases](https://github.com/Haoming02/tesseract-ocr-unity/releases)
 
 ## How to Use
-> An example `TesseractDemoScript.cs` is included
 
-1. Call the `Init` function under `Tesseract.Driver`
-    #### Parameters
-    - **lang:** The language to detect. Refer to the [LangCode](https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html).
-    - **confidence:** The minimum score a word needs in order to be considered correct
-        - **Important:** Due to how non-Latin characters *(**eg.** Chinese, Japanese)* works, the original implementation of separating "words" using spaces does not work. The current workaround is to set the `confidence` to **negative**, telling the function to simply return the entire detected text.
-    - **highlight:** Wether to produce the green highlight boxes on the image as shown below.
-        - If you only need the text outputs, disabling this can speed up the process.
-    - **onSetupComplete:** The callback that gets triggered when the model finishes loading successfully
+1. Call the `Init` function under `Tesseract` static class
+    - **lang:** The language to detect
+        - Refer to the official [LangCode](https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html)
+    - **minimumConfidence:** The minimum score a word needs in order to be considered correct
+    - **createHighlight:** Whether to create green highlight boxes on the image
+    - **onSetupComplete:** The callback that gets triggered when the model is loaded successfully
 
-2. Call the `Recognize` function under `Tesseract.Driver`
-    - The parameter is the `Texture2D` to perform OCR on
+> [!Important]
+> Due to how non-Latin characters *(**eg.** Japanese, Chinese)* works, the original implementation of separating "words" using spaces does not work. The current workaround is to set the `confidence` to **negative**, telling the function to simply return the entire detected text.
 
-## Example
-<p align="center">
-<img src="wiki.jpg" height=256>
-<img src="sample.jpg" height=256>
+2. Call the `Recognize` function under `Tesseract`
+3. (Optional) Call the `GetHighlight` function under `Tesseract` if enabled
+
 <br>
-<code>Input</code>
-|
-<code>Result</code>
+
+## Demo
+
+<p align="center">
+<img src="./Demo/example.png">
 </p>
-
-## Changes
-- Made the Driver `static`
-- Made some codes `async`
-- *Support non-Latin characters
-
-## License
-[Apache-2.0 License](LICENSE)
 
 <hr>
 
-- [How it Works](https://medium.com/xrpractices/offline-ocr-using-tesseract-in-unity-part-1-b9a717ac7bcb)
+> [!Tip]
+> Or, just use a modern vision model *(**eg.** `gemma3:4b`)* instead
